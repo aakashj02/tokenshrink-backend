@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status
-# We added UnifiedRunResponse to the end of this import line!
 from app.schemas.prompt import TokenOptimizeRequest, TokenOptimizeResponse, OptimizationMetrics, UnifiedRunResponse
 from app.services.token_counter import TokenCounterService
 from app.services.ai_compressor import AICompressorService
@@ -21,14 +20,45 @@ async def optimize_prompt_endpoint(payload: TokenOptimizeRequest):
             detail="Provided prompt parameter cannot be empty or whitespace."
         )
 
-    original_count = TokenCounterService.count_tokens(payload.prompt)
-    optimized_text = await ai_service.compress_prompt(payload.prompt)
-    optimized_count = TokenCounterService.count_tokens(optimized_text)
+    original_prompt = payload.prompt
+    original_count = TokenCounterService.count_tokens(original_prompt)
+    
+    # --- STEP 1: COMPRESS ---
+    optimized_text = await ai_service.compress_prompt(original_prompt)
 
-    if optimized_count > original_count or not optimized_text:
-        optimized_text = payload.prompt
+    # --- STEP 2: VERIFY (The LLM-as-a-Judge check) ---
+    judge_instruction = (
+        "You are a quality control system. Compare the Original Prompt and the Optimized Prompt. "
+        "Does the Optimized version retain ALL technical requirements, variables, constraints, "
+        "and the exact core meaning of the Original? Respond with exactly one word: YES or NO."
+    )
+    
+    judge_input = f"Original:\n{original_prompt}\n\nOptimized:\n{optimized_text}"
+    
+    try:
+        # Re-using your existing AI service to call the Judge
+        validation_response = await ai_service.client.chat.completions.create(
+            model=ai_service.model_name,
+            messages=[
+                {"role": "system", "content": judge_instruction},
+                {"role": "user", "content": judge_input}
+            ],
+            temperature=0.0
+        )
+        validation_result = validation_response.choices[0].message.content or "NO"
+    except Exception as e:
+        # If the judge fails, default to NO to protect the user
+        validation_result = "NO"
+
+    # --- STEP 3: FALLBACK CHECK ---
+    optimized_count = TokenCounterService.count_tokens(optimized_text)
+    
+    # We fallback to the original if the Judge says NO, if the API failed, or if it made the prompt longer
+    if "YES" not in validation_result.upper() or not optimized_text or optimized_count > original_count:
+        optimized_text = original_prompt
         optimized_count = original_count
 
+    # --- STEP 4: METRICS & RETURN ---
     tokens_saved = original_count - optimized_count
     
     compression_ratio = 0.0
@@ -50,7 +80,7 @@ async def optimize_prompt_endpoint(payload: TokenOptimizeRequest):
     )
 
     return TokenOptimizeResponse(
-        original_prompt=payload.prompt,
+        original_prompt=original_prompt,
         optimized_prompt=optimized_text,
         metrics=metrics_profile
     )
@@ -83,7 +113,6 @@ async def compress_and_execute_endpoint(payload: TokenOptimizeRequest):
             messages=[{"role": "user", "content": optimized_text}],
             temperature=0.7
         )
-        # The 'or ""' ensures we always pass a string back, even if the AI glitches
         ai_answer = response.choices[0].message.content or "" 
     except Exception as e:
         ai_answer = f"Failed to fetch response from model provider: {str(e)}"
