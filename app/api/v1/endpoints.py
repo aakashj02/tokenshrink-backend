@@ -25,6 +25,9 @@ async def optimize_prompt_endpoint(payload: TokenOptimizeRequest):
     
     # --- STEP 1: COMPRESS ---
     optimized_text = await ai_service.compress_prompt(original_prompt)
+
+    # --- FIX: Tags ko hatao ---
+    optimized_text = optimized_text.replace("<preserve>", "").replace("</preserve>", "").strip()
     
     # DEBUG LOG
     print(f"DEBUG: Original count: {original_count}")
