@@ -50,13 +50,13 @@ async def optimize_prompt_endpoint(payload: TokenOptimizeRequest):
     optimized_count = TokenCounterService.count_tokens(optimized_text)
     
     # Logic: Agar Judge NO bole OR optimized text original se bada ho jaye, tabhi fallback karo
-    is_valid = "YES" in validation_result.upper()
-    if not is_valid or optimized_count >= original_count:
-        print(f"DEBUG: Fallback Triggered! Valid: {is_valid}, NewCount: {optimized_count}")
-        optimized_text = original_prompt
-        optimized_count = original_count
-    else:
-        print("DEBUG: Optimization Successful!")
+    # is_valid = "YES" in validation_result.upper()
+    # if not is_valid or optimized_count >= original_count:
+    #     print(f"DEBUG: Fallback Triggered! Valid: {is_valid}, NewCount: {optimized_count}")
+    #     optimized_text = original_prompt
+    #     optimized_count = original_count
+    # else:
+    #     print("DEBUG: Optimization Successful!")
 
     # --- STEP 4: METRICS ---
     tokens_saved = original_count - optimized_count
