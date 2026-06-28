@@ -6,7 +6,8 @@ class AICompressorService:
         # Configure a relaxed timeout setting to handle slower network drops
         self.client = AsyncOpenAI(
             api_key=settings.OPENAI_API_KEY,
-            timeout=30.0  # Increased timeout parameter from default
+            timeout=60.0, # Increase to 60 seconds
+            max_retries=3 # Add retries to handle temporary network hiccups
         )
         self.model_name = "gpt-4o-mini"
 
