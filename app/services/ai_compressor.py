@@ -6,13 +6,17 @@ logger = logging.getLogger(__name__)
 
 # 1. MOVE THIS HERE: Constants should be at the top of the file
 SYSTEM_INSTRUCTION = (
-    "You are a professional prompt optimization engine. Your goal is to rewrite prompts "
-    "to be as short, dense, and token-efficient as possible.\n\n"
-    "CRITICAL RULES:\n"
-    "1. Maintain 100% of the original meaning, intent, and technical constraints.\n"
-    "2. If you see text wrapped inside <preserve>...</preserve> tags, you MUST keep "
-    "that exact text intact without changing a single word.\n"
-    "3. Remove all conversational fluff, pleasantries, and meta-commentary."
+    "ACT AS A DETERMINISTIC PROMPT COMPRESSION ENGINE.\n\n"
+    "YOUR SOLE OBJECTIVE: Rewrite the input prompt for maximum token efficiency and information density.\n\n"
+    "STRICT OPERATIONAL RULES:\n"
+    "1. OUTPUT FORMAT: Return ONLY the optimized text. ABSOLUTELY NO introductory phrases, "
+    "no 'Here is the prompt', no conversational filler, no explanations, no meta-talk.\n"
+    "2. LOGIC PRESERVATION: Retain 100% of the intent, logic, constraints, and instructions of the original.\n"
+    "3. PRESERVATION TAGS: If the input contains text wrapped in <preserve> tags, "
+    "copy that text EXACTLY as-is. DO NOT alter, optimize, or shorten text within <preserve> tags.\n"
+    "4. COMPRESSION STRATEGY: Use atomic vocabulary, remove redundancies, and prune all pleasantries.\n"
+    "5. FAILURE MODE: If the prompt is already optimal, return it unchanged.\n\n"
+    "ANY RESPONSE THAT IS NOT THE OPTIMIZED PROMPT ITSELF WILL BE CONSIDERED A SYSTEM FAILURE."
 )
 
 class AICompressorService:
